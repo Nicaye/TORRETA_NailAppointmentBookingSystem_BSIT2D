@@ -1,4 +1,3 @@
-
 package com.nailbooking.dao;
 
 import com.nailbooking.model.User;
@@ -105,7 +104,7 @@ public class UserDao {
         String sql = """
             SELECT id, username, password, roles, status
             FROM users
-            WHERE status = 'PENDING'
+            WHERE UPPER(status) = 'PENDING'
             ORDER BY id
             """;
 
@@ -132,13 +131,41 @@ public class UserDao {
         String sql = """
             UPDATE users
             SET status = 'APPROVED'
-            WHERE id = ? AND status = 'PENDING'
+            WHERE id = ? AND UPPER(status) = 'PENDING'
             """;
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
             statement.setInt(1, userId);
+
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    // NEW: Update a user's role and account status
+    public boolean updateUserRoleAndStatus(
+            int userId, String newRole, String newStatus)
+            throws SQLException {
+
+        if (newRole == null || newStatus == null) {
+            throw new IllegalArgumentException(
+                    "Role and status cannot be null."
+            );
+        }
+
+        String sql = """
+            UPDATE users
+            SET roles = ?, status = ?
+            WHERE id = ?
+            """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, newRole.toUpperCase());
+            statement.setString(2, newStatus.toUpperCase());
+            statement.setInt(3, userId);
 
             return statement.executeUpdate() > 0;
         }
