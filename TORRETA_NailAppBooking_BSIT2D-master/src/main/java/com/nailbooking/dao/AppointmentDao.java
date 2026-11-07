@@ -1,4 +1,3 @@
-
 package com.nailbooking.dao;
 
 import com.nailbooking.model.Appointment;

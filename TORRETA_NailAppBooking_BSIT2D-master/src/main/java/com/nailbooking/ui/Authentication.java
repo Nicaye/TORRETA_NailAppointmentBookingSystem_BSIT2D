@@ -1,3 +1,4 @@
+
 package com.nailbooking.ui;
 
 import com.nailbooking.dao.ActivityLogDao;
@@ -26,11 +27,19 @@ public class Authentication {
         this.applicationMenu = applicationMenu;
         this.logDao = logDao;
 
-        // Connect the new Admin Menu
-        this.adminMenu = new AdminMenu(userDao, input, applicationMenu);
+        // Connect Admin Menu with the shared ActivityLogDao
+        this.adminMenu = new AdminMenu(
+                userDao,
+                input,
+                applicationMenu,
+                logDao
+        );
     }
+
     public void start() {
+
         while (true) {
+
             System.out.println("\n==================================");
             System.out.println(" NAIL APPOINTMENT BOOKING SYSTEM");
             System.out.println("==================================");
@@ -41,20 +50,28 @@ public class Authentication {
             String choice = readText("Choose: ");
 
             switch (choice) {
+
                 case "1" -> register();
+
                 case "2" -> login();
+
                 case "3" -> {
                     System.out.println(
                             "Thank you for using the system!");
                     return;
                 }
+
                 default -> System.out.println("Invalid choice.");
             }
         }
     }
 
+    // ==================== REGISTRATION ====================
+
     private void register() {
+
         try {
+
             System.out.println("\n--- REGISTER ACCOUNT ---");
 
             String username = readText("Username: ");
@@ -69,8 +86,11 @@ public class Authentication {
             String role;
 
             switch (roleChoice) {
+
                 case "1" -> role = "CUSTOMER";
+
                 case "2" -> role = "NAIL_TECHNICIAN";
+
                 default -> {
                     System.out.println("Invalid role.");
                     return;
@@ -78,28 +98,37 @@ public class Authentication {
             }
 
             if (username.isBlank() || password.isBlank()) {
+
                 System.out.println(
                         "Username and password are required.");
                 return;
             }
 
             if (userDao.registerUser(username, password, role)) {
+
                 System.out.println(
                         "Account registered successfully. Status: PENDING");
 
                 logDao.recordActivity(
-                        username, "Registered account");
+                        username,
+                        "Registered account"
+                );
             }
 
         } catch (SQLException e) {
+
             System.out.println(
                     "Registration failed. The username may already exist. "
                             + e.getMessage());
         }
     }
 
+    // ==================== LOGIN ====================
+
     private void login() {
+
         try {
+
             System.out.println("\n--- LOGIN ---");
 
             String username = readText("Username: ");
@@ -108,6 +137,7 @@ public class Authentication {
             User user = userDao.loginUser(username, password);
 
             if (user == null) {
+
                 System.out.println(
                         "Login failed. Check your details or account status.");
                 return;
@@ -115,24 +145,38 @@ public class Authentication {
 
             System.out.println("Welcome, " + user.username() + "!");
 
-            logDao.recordActivity(user.username(), "Logged in");
+            logDao.recordActivity(
+                    user.username(),
+                    "Logged in"
+            );
 
             // Route users to the menu for their role
             if (user.roles().equalsIgnoreCase("ADMIN")) {
+
                 adminMenu.openMenu(user);
+
             } else {
+
                 applicationMenu.openMenu(user);
             }
 
-            logDao.recordActivity(user.username(), "Logged out");
+            logDao.recordActivity(
+                    user.username(),
+                    "Logged out"
+            );
 
         } catch (SQLException e) {
+
             System.out.println("Login error: " + e.getMessage());
         }
     }
 
+    // ==================== INPUT ====================
+
     private String readText(String prompt) {
+
         System.out.print(prompt);
+
         return input.nextLine().trim();
     }
 }

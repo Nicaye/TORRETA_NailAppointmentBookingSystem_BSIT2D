@@ -53,7 +53,7 @@ public class ApplicationMenu {
             System.out.println("7. Update Appointment");
             System.out.println("8. Delete Appointment");
             System.out.println("9. Appointment Summary Report");
-            System.out.println("10. View Activity Logs");
+            System.out.println("10. Back to Admin Menu");
             System.out.println("11. Logout");
 
             int choice = readInt("Choose: ");
@@ -68,7 +68,9 @@ public class ApplicationMenu {
                 case 7 -> updateAppointment(user);
                 case 8 -> deleteAppointment(user);
                 case 9 -> appointmentReport();
-                case 10 -> logDao.viewActivityLogs();
+                case 10 -> {
+                    return;
+                }
                 case 11 -> {
                     return;
                 }
