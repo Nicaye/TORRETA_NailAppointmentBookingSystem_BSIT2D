@@ -27,6 +27,8 @@ public class ApplicationMenu {
         this.logDao = logDao;
     }
 
+    // ==================== ADMIN SERVICES & APPOINTMENT MENU ====================
+
     public void openMenu(User user) {
         if (user.roles().equalsIgnoreCase("ADMIN")) {
             adminMenu(user);
@@ -39,11 +41,9 @@ public class ApplicationMenu {
         }
     }
 
-    // ==================== ADMIN MENU ====================
-
     private void adminMenu(User user) {
         while (true) {
-            System.out.println("\n========== ADMIN MENU ==========");
+            System.out.println("\n========== ADMIN SERVICES & APPOINTMENT MENU ==========");
             System.out.println("1. Add Nail Service");
             System.out.println("2. View Nail Services");
             System.out.println("3. Update Nail Service");
@@ -54,7 +54,6 @@ public class ApplicationMenu {
             System.out.println("8. Delete Appointment");
             System.out.println("9. Appointment Summary Report");
             System.out.println("10. Back to Admin Menu");
-            System.out.println("11. Logout");
 
             int choice = readInt("Choose: ");
 
@@ -69,9 +68,6 @@ public class ApplicationMenu {
                 case 8 -> deleteAppointment(user);
                 case 9 -> appointmentReport();
                 case 10 -> {
-                    return;
-                }
-                case 11 -> {
                     return;
                 }
                 default -> System.out.println("Invalid choice.");
@@ -144,6 +140,7 @@ public class ApplicationMenu {
 
             if (serviceDao.addService(name, price, duration)) {
                 System.out.println("Service added successfully.");
+
                 logDao.recordActivity(
                         user.username(), "Added service: " + name);
             }
@@ -184,6 +181,7 @@ public class ApplicationMenu {
 
             System.out.println(
                     "------+---------------------------+--------------+-----------");
+
             System.out.println("Total services: " + services.size());
 
         } catch (SQLException e) {
@@ -196,6 +194,25 @@ public class ApplicationMenu {
             viewServices();
 
             int id = readInt("Service ID to update: ");
+
+            List<NailService> services = serviceDao.getAllServices();
+            boolean exists = false;
+
+            for (NailService service : services) {
+                if (service.id() == id) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists) {
+                System.out.println("\nERROR: Service ID " + id + " does not exist!");
+                System.out.println("Please select an existing Service ID.");
+                return;
+            }
+
+            System.out.println("\n--- UPDATE NAIL SERVICE ---");
+
             String name = readText("New service name: ");
             double price = readDouble("New price: ");
             int duration = readInt("New duration in minutes: ");
@@ -206,11 +223,12 @@ public class ApplicationMenu {
             }
 
             if (serviceDao.updateService(id, name, price, duration)) {
-                System.out.println("Service updated.");
+                System.out.println("\nService updated successfully!");
+
                 logDao.recordActivity(
                         user.username(), "Updated service ID " + id);
             } else {
-                System.out.println("Service ID not found.");
+                System.out.println("Service update failed.");
             }
 
         } catch (SQLException e) {
@@ -226,6 +244,7 @@ public class ApplicationMenu {
 
             if (serviceDao.deleteService(id)) {
                 System.out.println("Service deleted.");
+
                 logDao.recordActivity(
                         user.username(), "Deleted service ID " + id);
             } else {
@@ -248,6 +267,12 @@ public class ApplicationMenu {
             String name = readText("Customer name: ");
             String contact = readText("Contact number: ");
             int serviceId = readInt("Service ID: ");
+
+            if (!serviceExists(serviceId)) {
+                System.out.println("ERROR: Service ID does not exist!");
+                return;
+            }
+
             String date = readText("Date (YYYY-MM-DD): ");
             String time = readText("Time (HH:MM): ");
 
@@ -261,18 +286,17 @@ public class ApplicationMenu {
                     name, contact, serviceId, date, time)) {
 
                 System.out.println("Appointment added successfully.");
+
                 logDao.recordActivity(
                         user.username(), "Added appointment for " + name);
             }
 
         } catch (SQLException e) {
             System.out.println(
-                    "Could not add appointment. Check the service ID. "
-                            + e.getMessage());
+                    "Could not add appointment: " + e.getMessage());
         }
     }
 
-    // Formatted table for Admin and Technician
     private void viewAppointments() {
         try {
             List<Appointment> appointments =
@@ -295,6 +319,12 @@ public class ApplicationMenu {
             String name = readText("Your full name: ");
             String contact = readText("Contact number: ");
             int serviceId = readInt("Enter the service ID you want: ");
+
+            if (!serviceExists(serviceId)) {
+                System.out.println("ERROR: Service ID does not exist!");
+                return;
+            }
+
             String date = readText("Appointment date (YYYY-MM-DD): ");
             String time = readText("Appointment time (HH:MM): ");
 
@@ -320,8 +350,7 @@ public class ApplicationMenu {
 
         } catch (SQLException e) {
             System.out.println(
-                    "Could not book appointment. Check the service ID. "
-                            + e.getMessage());
+                    "Could not book appointment: " + e.getMessage());
         }
     }
 
@@ -378,21 +407,14 @@ public class ApplicationMenu {
 
         System.out.printf(
                 "%-5s | %-20s | %-15s | %-10s | %-12s | %-8s | %-12s%n",
-                "ID",
-                "Customer Name",
-                "Contact Number",
-                "Service ID",
-                "Date",
-                "Time",
-                "Status");
+                "ID", "Customer Name", "Contact Number",
+                "Service ID", "Date", "Time", "Status");
 
         System.out.println(
                 "------+----------------------+-----------------+------------+--------------+----------+--------------");
 
         if (appointments.isEmpty()) {
             System.out.println("No appointments found.");
-            System.out.println(
-                    "==============================================================================================");
             return;
         }
 
@@ -417,78 +439,159 @@ public class ApplicationMenu {
                 "==============================================================================================");
     }
 
-    // ==================== UPDATE APPOINTMENTS ====================
+    // ==================== UPDATE APPOINTMENT ====================
 
     private void updateAppointment(User user) {
         try {
             viewAppointments();
 
             int id = readInt("Appointment ID to update: ");
+
+            List<Appointment> appointments =
+                    appointmentDao.getAllAppointments();
+
+            Appointment selectedAppointment = null;
+
+            // Check whether the appointment ID exists
+            for (Appointment appointment : appointments) {
+                if (appointment.id() == id) {
+                    selectedAppointment = appointment;
+                    break;
+                }
+            }
+
+            // Stop if the ID does not exist
+            if (selectedAppointment == null) {
+                System.out.println(
+                        "\nERROR: Appointment ID " + id + " does not exist!");
+                System.out.println("Please select an existing Appointment ID.");
+                return;
+            }
+
+            // Continue only if the ID is valid
+            System.out.println("\n--- UPDATE APPOINTMENT ---");
+
             String name = readText("New customer name: ");
             String contact = readText("New contact number: ");
 
             viewServices();
 
             int serviceId = readInt("New service ID: ");
+
+            if (!serviceExists(serviceId)) {
+                System.out.println(
+                        "ERROR: Service ID " + serviceId + " does not exist!");
+                return;
+            }
+
             String date = readText("New date (YYYY-MM-DD): ");
             String time = readText("New time (HH:MM): ");
-            String status = readText(
-                    "Status (PENDING, CONFIRMED, COMPLETED, CANCELLED): ");
 
-            if (name.isBlank() || contact.isBlank()
-                    || date.isBlank() || time.isBlank()
-                    || !validStatus(status)) {
+            // Status validation loop
+            String status;
+
+            while (true) {
+                status = readText(
+                        "Status (PENDING, CONFIRMED, COMPLETED, CANCELLED): "
+                ).toUpperCase();
+
+                if (validStatus(status)) {
+                    break;
+                }
 
                 System.out.println(
-                        "Please enter valid details and status.");
+                        "Invalid status. Please choose from PENDING, CONFIRMED, COMPLETED, or CANCELLED.");
+            }
+
+            // Validate remaining appointment details
+            if (name.isBlank() || contact.isBlank()
+                    || date.isBlank() || time.isBlank()) {
+
+                System.out.println(
+                        "Please enter valid appointment details.");
                 return;
             }
 
             if (appointmentDao.updateAppointment(
                     id, name, contact, serviceId, date, time, status)) {
 
-                System.out.println("Appointment updated.");
+                System.out.println("\nAppointment updated successfully!");
 
                 logDao.recordActivity(
                         user.username(), "Updated appointment ID " + id);
 
             } else {
-                System.out.println("Appointment ID not found.");
+                System.out.println("Appointment update failed.");
             }
 
         } catch (SQLException e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
+
+    // ==================== TECHNICIAN UPDATE STATUS ====================
 
     private void updateAppointmentStatus(User user) {
         try {
             viewAppointments();
 
-            int id = readInt("Appointment ID: ");
-            String status = readText(
-                    "New status (PENDING, CONFIRMED, COMPLETED, CANCELLED): ");
+            int id = readInt("Appointment ID to update: ");
 
-            if (!validStatus(status)) {
-                System.out.println("Invalid status.");
+            List<Appointment> appointments =
+                    appointmentDao.getAllAppointments();
+
+            Appointment selectedAppointment = null;
+
+            for (Appointment appointment : appointments) {
+                if (appointment.id() == id) {
+                    selectedAppointment = appointment;
+                    break;
+                }
+            }
+
+            if (selectedAppointment == null) {
+                System.out.println(
+                        "ERROR: Appointment ID " + id + " does not exist!");
                 return;
             }
 
-            if (appointmentDao.updateAppointmentStatus(id, status)) {
-                System.out.println("Appointment status updated.");
+            System.out.println("\nCurrent status: "
+                    + selectedAppointment.status());
+
+            String status = readText(
+                    "New status (PENDING, CONFIRMED, COMPLETED, CANCELLED): "
+            ).toUpperCase();
+
+            if (!validStatus(status)) {
+                System.out.println("Invalid appointment status.");
+                return;
+            }
+
+            if (appointmentDao.updateAppointment(
+                    id,
+                    selectedAppointment.customerName(),
+                    selectedAppointment.contactNumber(),
+                    selectedAppointment.serviceId(),
+                    selectedAppointment.appointmentDate(),
+                    selectedAppointment.appointmentTime(),
+                    status)) {
+
+                System.out.println("Appointment status updated successfully!");
 
                 logDao.recordActivity(
                         user.username(),
-                        "Changed appointment " + id + " to " + status);
+                        "Updated status of appointment ID " + id);
 
             } else {
-                System.out.println("Appointment ID not found.");
+                System.out.println("Failed to update appointment status.");
             }
 
         } catch (SQLException e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
+
+    // ==================== DELETE APPOINTMENT ====================
 
     private void deleteAppointment(User user) {
         try {
@@ -501,7 +604,6 @@ public class ApplicationMenu {
 
                 logDao.recordActivity(
                         user.username(), "Deleted appointment ID " + id);
-
             } else {
                 System.out.println("Appointment ID not found.");
             }
@@ -545,6 +647,18 @@ public class ApplicationMenu {
     }
 
     // ==================== HELPER METHODS ====================
+
+    private boolean serviceExists(int id) throws SQLException {
+        List<NailService> services = serviceDao.getAllServices();
+
+        for (NailService service : services) {
+            if (service.id() == id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private boolean validStatus(String status) {
         return status.equalsIgnoreCase("PENDING")

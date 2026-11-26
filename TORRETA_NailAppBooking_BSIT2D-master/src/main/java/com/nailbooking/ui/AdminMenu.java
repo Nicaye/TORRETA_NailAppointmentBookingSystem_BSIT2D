@@ -1,4 +1,3 @@
-
 package com.nailbooking.ui;
 
 import com.nailbooking.dao.ActivityLogDao;

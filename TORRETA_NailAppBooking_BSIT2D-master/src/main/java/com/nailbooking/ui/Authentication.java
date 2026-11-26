@@ -1,4 +1,3 @@
-
 package com.nailbooking.ui;
 
 import com.nailbooking.dao.ActivityLogDao;
@@ -72,31 +71,40 @@ public class Authentication {
 
         try {
 
-            System.out.println("\n--- REGISTER ACCOUNT ---");
+            System.out.println("\n==================== REGISTER ACCOUNT ====================");
 
             String username = readText("Username: ");
             String password = readText("Password: ");
 
-            System.out.println("Account role:");
-            System.out.println("1. Customer");
-            System.out.println("2. Nail Technician");
+            String role = null;
 
-            String roleChoice = readText("Choose role: ");
+            // Loop until a valid role is selected
+            while (role == null) {
 
-            String role;
+                System.out.println("\nAccount role:");
+                System.out.println("1. Customer");
+                System.out.println("2. Nail Technician");
 
-            switch (roleChoice) {
+                String roleChoice = readText("Choose role: ");
 
-                case "1" -> role = "CUSTOMER";
+                switch (roleChoice) {
 
-                case "2" -> role = "NAIL_TECHNICIAN";
+                    case "1":
+                        role = "CUSTOMER";
+                        break;
 
-                default -> {
-                    System.out.println("Invalid role.");
-                    return;
+                    case "2":
+                        role = "NAIL_TECHNICIAN";
+                        break;
+
+                    default:
+                        System.out.println(
+                                "Invalid role. Please choose 1 or 2.");
+                        break;
                 }
             }
 
+            // Validate username and password
             if (username.isBlank() || password.isBlank()) {
 
                 System.out.println(
@@ -104,6 +112,7 @@ public class Authentication {
                 return;
             }
 
+            // Register account in the database
             if (userDao.registerUser(username, password, role)) {
 
                 System.out.println(
@@ -129,7 +138,7 @@ public class Authentication {
 
         try {
 
-            System.out.println("\n--- LOGIN ---");
+            System.out.println("\n==================== LOGIN ====================");
 
             String username = readText("Username: ");
             String password = readText("Password: ");
